@@ -9,12 +9,8 @@ import { promisify } from "node:util";
 import fs from "node:fs/promises";
 import os from "node:os";
 import path from "node:path";
-import cors from "cors";
 const execFileAsync = promisify(execFile);
 const app = express();
-
-// (opcional mas seguro) — se algum dia mandares JSON, isto evita problemas
-// app.use(express.json());
 
 const allowedOrigins = new Set([
   "https://www.moldette.pt",
@@ -24,22 +20,25 @@ const allowedOrigins = new Set([
   "http://localhost:5175",
 ]);
 
-const corsOptions = {
-  origin: (origin, cb) => {
-    // Permite pedidos sem Origin (Postman / server-to-server)
-    if (!origin) return cb(null, true);
+// ✅ CORS manual: garante headers mesmo quando dá erro/404
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
 
-    if (allowedOrigins.has(origin)) return cb(null, true);
+  if (origin && allowedOrigins.has(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+    res.setHeader("Vary", "Origin"); // importante para caches
+  }
 
-    // Bloqueia origens desconhecidas
-    return cb(null, false);
-  },
-  methods: ["GET", "POST", "OPTIONS"],
-  allowedHeaders: ["Content-Type", "Authorization"],
-};
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-app.use(cors(corsOptions));
-app.options("*", cors(corsOptions)); // importante para preflight (browser)
+  // ✅ Responde logo ao preflight
+  if (req.method === "OPTIONS") {
+    return res.sendStatus(204);
+  }
+
+  next();
+});
 
 const upload = multer({ storage: multer.memoryStorage() });
 
