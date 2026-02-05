@@ -1,37 +1,33 @@
-
-import { PNG } from "pngjs";
-import express from "express";
-import multer from "multer";
-import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
-import fs from "node:fs/promises";
-import os from "node:os";
-import path from "node:path";
-import cors from "cors";
-
 const execFileAsync = promisify(execFile);
 const app = express();
-const allowedOrigins = [
+
+// (opcional mas seguro) — se algum dia mandares JSON, isto evita problemas
+// app.use(express.json());
+
+const allowedOrigins = new Set([
   "https://www.moldette.pt",
   "https://moldette.pt",
   "http://localhost:5173",
   "http://localhost:5174",
   "http://localhost:5175",
-];
+]);
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, cb) => {
+    // Permite pedidos sem Origin (Postman / server-to-server)
     if (!origin) return cb(null, true);
-    if (allowedOrigins.includes(origin)) return cb(null, true);
+
+    if (allowedOrigins.has(origin)) return cb(null, true);
+
+    // Bloqueia origens desconhecidas
     return cb(null, false);
   },
   methods: ["GET", "POST", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
-}));
+};
 
-app.options("*", cors());
-
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // importante para preflight (browser)
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -562,13 +558,14 @@ const imageDataUrl = await renderPage1ToImage(pdfBufferImage, cropHpx, footerLik
       fields,
       imageDataUrl,
     });
-  } catch (err) {
-    console.error("parse-plano error:", err);
-    res.status(500).json({
-      ok: false,
-      error: "Falha no parse do PDF (backend)",
-    });
-  }
+} catch (err) {
+  console.error("parse-plano error:", err);
+  res.status(500).json({
+    ok: false,
+    error: String(err?.message || err),
+  });
+}
+
 });
 
 /* =========================
