@@ -1,3 +1,15 @@
+
+
+import { PNG } from "pngjs";
+import express from "express";
+import multer from "multer";
+import * as pdfjs from "pdfjs-dist/legacy/build/pdf.mjs";
+import { execFile } from "node:child_process";
+import { promisify } from "node:util";
+import fs from "node:fs/promises";
+import os from "node:os";
+import path from "node:path";
+import cors from "cors";
 const execFileAsync = promisify(execFile);
 const app = express();
 
