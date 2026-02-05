@@ -544,7 +544,7 @@ app.get("/api/health", (_req, res) => {
   res.json({ ok: true });
 });
 
-app.post("/api/parse-plano", upload.single("file"), async (req, res) => {
+app.post(["/api/parse-plano", "/parse-plano"], upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ ok: false, error: "Sem ficheiro" });
